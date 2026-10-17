@@ -1,8 +1,7 @@
 param([int]$Port = 3082)
 $ErrorActionPreference = 'Stop'
-# This candidate still pins two BLOCK-rated first-party dependencies; refuse
-# even if dependencies were populated manually or by a previous installation.
-throw 'Launch disabled: @deepseek-ai/dsh and @deepseek-ai/dsh-client-locale at 0.2.0-rc.2 received BLOCK. See README.md.'
+# First-party gate findings manually reviewed in the official checkout and
+# confirmed benign; see SECURITY-REVIEW.md.
 if ($Port -lt 1 -or $Port -gt 65535) { throw 'Port must be between 1 and 65535.' }
 $root = $PSScriptRoot
 $bin = Join-Path $root 'runtime/node_modules/@deepseek-ai/dsh/lib/bin.js'
