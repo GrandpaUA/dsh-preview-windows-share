@@ -27,6 +27,15 @@
 
 П'ятнадцять плагінів із вихідного списку свідомо не включені:
 
+За підтвердженням власника, в оригінальній збірці були встановлені ці шість плагінів. Їхніх назв немає в маніфесті цього набору:
+
+- `@dennisrongo/dsh-memory`
+- `@michengai/dsh-archive-manager`
+- `dock-editor`
+- `dsh-config-manager`
+- `dsh-plugin-gate`
+- `dshmarket`
+
 - **Шість із вердиктом BLOCK** (`dsh-memory`, `dsh-archive-manager`, `dock-editor`, `dsh-config-manager`, `dsh-plugin-gate`, `dshmarket`) — статична перевірка знайшла високоризикові шаблони в цих точних версіях. Вони додаються лише коли видавець випустить нову версію, що пройде перевірку. Повний список із версіями — у `PLUGIN-HANDOFF.md`.
 - **Дев'ять із WARN** (`dsh-usage`, `ultra-slash`, `dock-files`, `dock-git`, `checkpoint-diff`, `checkpoint-rewind`, `classic-coding`, `auto-continue`, `dsh-context`) — працездатні, але мають ризикові можливості (доступ до облікових даних, довільні шляхи, фонові запити). Їх можна додати пізніше за бажанням клієнта: спочатку переглянути знахідки сканера для точної версії, потім додати в `profiles/web/package.json` і оновити lockfile.
 
