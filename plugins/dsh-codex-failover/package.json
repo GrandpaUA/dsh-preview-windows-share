@@ -1,0 +1,12 @@
+{
+  "name": "@local/dsh-codex-failover",
+  "description": "Local DSH plugin: on Codex QUOTA error, swap CODEX_CHATGPT_TOKEN to the backup account token and retry the step in the same session",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  }
+}

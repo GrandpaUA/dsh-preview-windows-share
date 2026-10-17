@@ -1,0 +1,19 @@
+{
+  "name": "@local/dsh-wide-chat",
+  "description": "Local DSH web tweak: wider conversation column and composer",
+  "version": "0.2.0",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "inject": [],
+      "platform": "web",
+      "immediately": true
+    }
+  }
+}

@@ -1,0 +1,46 @@
+diff --git a/lib/client.js b/lib/client.js
+index 29c1b1cdf031a5301705c5e0ead6a70058542d50..7ef9fd933fb8144a6d2891ab44f5715179b7b8bb 100644
+--- a/lib/client.js
++++ b/lib/client.js
+@@ -561,16 +561,21 @@ window.__ModuleLoader__.load({
+ 			const currentChoice = choices[state.current === null ? -1 : choices.findIndex((c) => c.selection.provider === state.current?.provider && c.selection.model === state.current.model)];
+ 			const reasoning = currentChoice?.model.reasoning;
+ 			const effectiveEffort = state.current?.reasoningEffort ?? reasoning?.defaultEffort;
+-			const effortLabel = reasoning === void 0 ? state.retainedEffort : effectiveEffort === void 0 ? t("effort.providerDefault") : reasoning.efforts.find((level) => level.id === effectiveEffort)?.name ?? effectiveEffort;
+-			const effortChoices = (0, react.useMemo)(() => reasoning === void 0 ? [] : [...reasoning.defaultEffort === void 0 ? [{
++			const effortName = (id, fallback) => {
++				const key = `effort.level.${id}`;
++				const translated = t(key);
++				return translated === key ? fallback : translated;
++			};
++			const effortLabel = reasoning === void 0 ? state.retainedEffort === void 0 ? void 0 : effortName(state.retainedEffort, state.retainedEffort) : effectiveEffort === void 0 ? t("effort.providerDefault") : effortName(effectiveEffort, reasoning.efforts.find((level) => level.id === effectiveEffort)?.name ?? effectiveEffort);
++			const effortChoices = reasoning === void 0 ? [] : [...reasoning.defaultEffort === void 0 ? [{
+ 				key: "provider-default",
+ 				effort: void 0,
+ 				label: t("effort.providerDefault")
+ 			}] : [], ...reasoning.efforts.map((effort) => ({
+ 				key: `effort:${effort.id}`,
+ 				effort: effort.id,
+-				label: effort.name
+-			}))], [reasoning, t]);
++				label: effortName(effort.id, effort.name)
++			}))];
+ 			const { pending } = state;
+ 			const busy = pending !== null;
+ 			const reload = () => {
+@@ -1100,6 +1105,7 @@ window.__ModuleLoader__.load({
+ 			"menu.effort": "推理等级",
+ 			"effort.providerDefault": "Default",
+ 			"status.loading": "正在刷新模型列表…",
++			"effort.level.none": "关闭", "effort.level.minimal": "最小", "effort.level.low": "低", "effort.level.medium": "中", "effort.level.high": "高", "effort.level.xhigh": "很高", "effort.level.max": "最高", "effort.level.ultra": "极高",
+ 			"error.action": "模型操作失败：{message}",
+ 			"error.sessionInUse": "当前会话已被占用，可能是其他正在运行的 DSH 导致的（如其他 dsh web、桌面端），请退出其他正在运行的 DSH 后重试。",
+ 			"action.reload": "重新加载",
+@@ -1126,6 +1132,7 @@ window.__ModuleLoader__.load({
+ 			"menu.effort": "Effort",
+ 			"effort.providerDefault": "Default",
+ 			"status.loading": "Refreshing model list…",
++			"effort.level.none": "None", "effort.level.minimal": "Minimal", "effort.level.low": "Low", "effort.level.medium": "Medium", "effort.level.high": "High", "effort.level.xhigh": "Extra high", "effort.level.max": "Maximum", "effort.level.ultra": "Ultra",
+ 			"error.action": "Model operation failed: {message}",
+ 			"error.sessionInUse": "This session is already in use, possibly by another running DSH instance (such as dsh web or the desktop app). Quit other running DSH instances and try again.",
+ 			"action.reload": "Reload",

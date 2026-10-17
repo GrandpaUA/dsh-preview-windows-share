@@ -1,0 +1,20 @@
+diff --git a/lib/index.js b/lib/index.js
+index 0c74b3ab2b556f4b0e656a304e1242ffceb8c288..fe808e97ff68ec9e7eaf7d37662a535d7d8eb0dc 100644
+--- a/lib/index.js
++++ b/lib/index.js
+@@ -10,6 +10,7 @@ import { builtinModels, builtinProviders, getBuiltinModels, getBuiltinProviders
+ import { anthropicMessagesApi } from "@earendil-works/pi-ai/api/anthropic-messages.lazy";
+ import { openAICompletionsApi } from "@earendil-works/pi-ai/api/openai-completions.lazy";
+ import { openAIResponsesApi } from "@earendil-works/pi-ai/api/openai-responses.lazy";
++import { openAICodexResponsesApi } from "@earendil-works/pi-ai/api/openai-codex-responses.lazy";
+ import { isContextOverflow } from "@earendil-works/pi-ai/utils/overflow";
+ import { homedir } from "node:os";
+ import { access } from "node:fs/promises";
+@@ -802,6 +803,7 @@ function getSupportedThinkingLevels(model) {
+ const PROTOCOLS = {
+ 	"openai-completions": openAICompletionsApi,
+ 	"openai-responses": openAIResponsesApi,
++	"openai-codex-responses": openAICodexResponsesApi,
+ 	"anthropic-messages": anthropicMessagesApi
+ };
+ /**

@@ -1,0 +1,23 @@
+diff --git a/lib/index.js b/lib/index.js
+index 35f2fb2f21f5f0a3857adb3f6ea93a57389be375..7bcee5a749ecb0f83c02012b07e3021322707631 100644
+--- a/lib/index.js
++++ b/lib/index.js
+@@ -171,10 +171,16 @@ const titleViewSchema = z$1.string().min(1).nullable();
+ /** Latest logged title text and its client view. */
+ const titleProjectionDefinition = {
+ 	key: "title",
+-	stateVersion: 1,
++	stateVersion: 2,
+ 	stateSchema: titleViewSchema,
+ 	init: () => null,
+-	apply: (state, event) => event.type === "session/title" ? event.data.title : state,
++	apply: (state, event) => {
++		if (event.type === "session/title") return event.data.title;
++		if (state !== null) return state;
++		// Historical sessions predate logged titles. Derive a view without writing history.
++		const message = sessionTitleUserMessageOf(event);
++		return message === void 0 ? state : fallbackSessionTitle(message.text, 8, 120) || null;
++	},
+ 	wire: {
+ 		viewSchema: titleViewSchema,
+ 		view: (state) => state

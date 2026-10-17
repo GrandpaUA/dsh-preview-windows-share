@@ -1,0 +1,248 @@
+diff --git a/lib/client.js b/lib/client.js
+index 1bc745cd790c77b12c1b08009211573b086adb14..5b71264c4347a68dcc0738ba973a08eea008b041 100644
+--- a/lib/client.js
++++ b/lib/client.js
+@@ -4,7 +4,7 @@ window.__ModuleLoader__.load({
+ 		var module = { exports: {} };
+ 		var exports = module.exports;
+ 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
+-		let _deepseek_ai_dsh_client_runtime_client = require("@deepseek-ai/dsh-client-runtime/client");
++		let _deepseek_ai_dsh_client_runtime_client = require("@deepseek-ai/dsh-client-store");
+ 		let react_jsx_runtime = require("react/jsx-runtime");
+ 		//#region ../core/src/themes/catppuccin.ts
+ 		/**
+@@ -1011,47 +1011,54 @@ window.__ModuleLoader__.load({
+ 		* service (selection) or the scope (durability).
+ 		*/
+ 		function createPicker(theme, scope) {
+-			/**
+-			* Adopt the persisted third-party selection once the durable scope is
+-			* ready. The host SettingsScope performs its initial read in the
+-			* background (activation never blocks on it), so this runs both at
+-			* creation and on every scope update until a registered value lands;
+-			* `setTheme` with an unchanged id is a host-side no-op, so retries are
+-			* safe.
+-			*/
++			let selected = "system";
++			let applied = "system";
++			let disposeLayer;
++			const applySelection = (id) => {
++				const definition = theme.getTheme().themes.find((item) => item.id === id);
++				if (id !== "system" && !definition) return;
++				selected = id;
++				if (applied === id) return;
++				applied = id;
++				disposeLayer?.();
++				disposeLayer = undefined;
++				if (id === "system") return;
++				// Keep the host's durable built-in preference and the skin independent.
++				// Host settings notifications otherwise adopt dark and erase a custom id.
++				theme.setTheme(definition.colorScheme);
++				disposeLayer = theme.overrideTokens("dsh-themes", Object.fromEntries(
++					Object.entries({...definition.tokens,
++						"--dsw-alias-quota-normal": definition.tokens["--dsw-alias-state-business-primary"],
++						"--dsw-alias-quota-warn": definition.tokens["--dsw-alias-state-warn-primary"],
++						"--dsw-alias-quota-low": definition.tokens["--dsw-alias-state-error-primary"]
++					}).map(([name, value]) => [name, {light:value, dark:value}])
++				));
++			};
+ 			const tryRestore = () => {
+-				const snapshot = scope.getSnapshot();
+-				if (snapshot.status !== "ready") return;
+-				const persisted = snapshot.value?.theme;
+-				if (!isThemeSelection(persisted) || persisted === "system") return;
+-				if (!theme.getTheme().themes.some((candidate) => candidate.id === persisted)) return;
+-				theme.setTheme(persisted);
++				const state = scope.getSnapshot();
++				if (state.status === "ready") applySelection(state.value?.theme ?? "system");
+ 			};
+ 			const unsubScope = scope.subscribe(tryRestore);
+ 			tryRestore();
+ 			return {
+ 				getTheme() {
+-					return theme.getTheme();
+-				},
+-				restore() {
+-					tryRestore();
+-				},
+-				async sync(payload) {
+-					const activeId = payload.active.id;
+-					if (BUILTIN_IDS$1.has(activeId)) {
+-						const current = scope.getSnapshot().value?.theme;
+-						if (current !== void 0 && current !== "system") await scope.set(THEME_FIELD, DEFAULT_SELECTION);
+-						return;
+-					}
+-					if (scope.getSnapshot().value?.theme === activeId) return;
+-					await scope.set(THEME_FIELD, activeId);
++					const snapshot = theme.getTheme();
++					if (selected === "system") return snapshot;
++					const definition = snapshot.themes.find((item) => item.id === selected);
++					return {...snapshot, preference:selected, active:{...snapshot.active,id:definition.id}};
+ 				},
++				restore:tryRestore,
++				sync() {},
+ 				setTheme(id) {
+-					theme.setTheme(id);
++					if (id === "system" || BUILTIN_IDS$1.has(id)) {
++						applySelection("system");
++						theme.setTheme(id);
++						return scope.set(THEME_FIELD, "system");
++					}
++					applySelection(id);
++					return scope.set(THEME_FIELD,id);
+ 				},
+-				dispose() {
+-					unsubScope();
+-				}
++				dispose() {unsubScope(); disposeLayer?.();}
+ 			};
+ 		}
+ 		//#endregion
+@@ -1287,7 +1294,7 @@ window.__ModuleLoader__.load({
+ 		/** Services this plugin consumes. */
+ 		const inject = [
+ 			"theme",
+-			"settingsScope",
++			"configForms",
+ 			"slots",
+ 			"locale"
+ 		];
+@@ -1297,11 +1304,39 @@ window.__ModuleLoader__.load({
+ 		* section (id `themes`, order 11 — right after the host Appearance row).
+ 		*/
+ 		function apply(ctx) {
++			ctx.effect(() => {
++				const style = document.createElement("style");
++				style.dataset.dshStatsPalette = "codex";
++				// StatsLine DOM from dsh-client-ui-conversation 0.1.0-rc.8:
++				// metric spans alternate with neutral separator spans.
++				style.textContent = `
++
++body[data-ds-dark-theme] [data-composer-stats]>.bOPqQW_anchor:first-child .bOPqQW_pill{color:#66b5ff}
++body[data-ds-dark-theme] [data-composer-stats]>.bOPqQW_anchor:nth-child(2) .bOPqQW_pill{color:#ffa3ce}
++body[data-ds-dark-theme] [data-session-stats-details] dd:nth-of-type(1){color:#be95fa}
++body[data-ds-dark-theme] [data-session-stats-details] dd:nth-of-type(2){color:#ff9e6c}
++body[data-ds-dark-theme] [data-session-stats-details] dd:nth-of-type(3){color:#be95fa}
++body[data-ds-dark-theme] [data-session-stats-details] dd:nth-of-type(4){color:#66d492}
++body[data-ds-dark-theme] [data-session-stats-usage] dd{color:#ffa3ce}
++
++.FJxK0a_root{font-variant-numeric:tabular-nums}
++.FJxK0a_root>span:not(.FJxK0a_sep){font-weight:500}
++.FJxK0a_root>.FJxK0a_sep{color:var(--dsw-alias-label-tertiary);opacity:.6}
++body[data-ds-dark-theme] .FJxK0a_root>span:nth-of-type(10n+1){color:#66b5ff}
++body[data-ds-dark-theme] .FJxK0a_root>span:nth-of-type(10n+3){color:#be95fa}
++body[data-ds-dark-theme] .FJxK0a_root>span:nth-of-type(10n+5){color:#66d492}
++body[data-ds-dark-theme] .FJxK0a_root>span:nth-of-type(10n+7){color:#ff9e6c}
++body[data-ds-dark-theme] .FJxK0a_root>span:nth-of-type(10n+9){color:#ffa3ce}
++`;
++				document.head.appendChild(style);
++				return () => style.remove();
++			}, "dsh-themes: Codex statistics accents");
+ 			ctx.effect(() => registerThemes(ctx.theme), "dsh-themes: register themes");
+-			const scope = ctx.settingsScope.bind({ namespace: THEMES_NAMESPACE });
++			const scope = ctx.configForms.get(THEMES_NAMESPACE);
+ 			ctx.effect(() => ctx.locale.register(SETTINGS_NS, {
+ 				en,
+-				zh
++				zh,
++				uk: {"picker.title":"Тема","picker.light":"Світла","picker.dark":"Темна","picker.system":"Системна","theme.deepseek":"DeepSeek","theme.oled":"OLED","theme.dracula":"Dracula","theme.catppuccin":"Catppuccin","theme.tokyo-night":"Tokyo Night","theme.github-dark":"GitHub Dark","theme.solarized":"Solarized","theme.gruvbox":"Gruvbox","theme.nord":"Nord","theme.synthwave-84":"Synthwave '84","theme.cobalt2":"Cobalt2"}
+ 			}), "dsh-themes: picker locale");
+ 			const picker = createPicker(ctx.theme, scope);
+ 			const store = createPickerStore();
+diff --git a/lib/index.js b/lib/index.js
+index 6f6f6f8a080a83bbb422c7fb76396176696803ed..5d97a816b1e912b3c824879854e52833b4f29ed2 100644
+--- a/lib/index.js
++++ b/lib/index.js
+@@ -1,65 +1,7 @@
+ import z from "@deepseek-ai/schemastery";
+-//#region src/preference.ts
+-/**
+-* Durable selection contract for third-party themes.
+-*
+-* The host's built-in theme schema (`ui-theme.preference`) only accepts
+-* `light`/`dark`/`system`, so this plugin owns its own settings namespace for
+-* third-party ids. The value `system` is the sentinel meaning "no override —
+-* follow the host preference".
+-*
+-* Both halves of the plugin import this module, so it stays free of host
+-* packages: the browser module table serves platform seed words and shell-own
+-* modules only, and a client bundle requiring anything else fails to load.
+-* The schemastery envelope built on these names lives in `./schema.ts`, which
+-* only the Node half imports.
+-*/
+-/** Settings namespace owned by the picker plugin. */
+-const THEMES_NAMESPACE = "dsh-themes";
+-/** Field carrying the selected third-party theme id (or `system`). */
+-const THEME_FIELD = "theme";
+-/** Durable marker meaning "no third-party override; follow the host". */
+-const DEFAULT_SELECTION = "system";
+-//#endregion
+-//#region src/schema.ts
+-/**
+-* Durable settings schema for the picker's namespace, expressed with
+-* `@deepseek-ai/schemastery` (the host's schema library) so Host-side
+-* registration reuses it verbatim.
+-*
+-* Only the Node half imports this module. Schemastery is a host package the
+-* dsh installation resolves through the profile's module fallback; the
+-* browser module table does not serve it, so pulling this module into the
+-* client bundle would fail the plugin load.
+-*/
+-/**
+-* Durable schema; also the wire envelope the settings scope validates
+-* against. The default keeps the field optional in the stored document.
+-*/
+-const THEME_PREFERENCE_SCHEMA = z.object({ [THEME_FIELD]: z.string().default(DEFAULT_SELECTION) });
+-//#endregion
+-//#region src/index.ts
+-/**
+-* Host-side registration for the picker's durable settings namespace. The
+-* browser plugin body lives in `./client.ts`; this entry is the Node half the
+-* dsh Loader mounts when a composition row names this package, mirroring the
+-* host/client split of `@deepseek-ai/dsh-client-ui-theme` (its Host entry
+-* registers the settings namespace, its client entry owns the browser face).
+-*
+-* Declared structurally so the package type-checks without the dsh
+-* application tree; at runtime the real host Context satisfies it.
+-*/
+-/** Optional services this entry consumes. */
+-const inject = ["settings"];
+-/**
+-* Host plugin body: register the durable `dsh-themes` namespace into the Host
+-* settings service when one is composed, so the settings document accepts and
+-* schema-validates the third-party theme selection.
+-*/
+-function apply(ctx) {
+-	ctx.inject(["settings"], (settingsCtx) => {
+-		settingsCtx.settings.register(THEMES_NAMESPACE, THEME_PREFERENCE_SCHEMA);
+-	});
++export const Config = z.object({theme:z.string().default("system").volatile()});
++export function apply(ctx) {
++ ctx.inject(["settings"], (child) => {
++  child.effect(() => child.settings.configure({auto:false},ctx.fiber));
++ });
+ }
+-//#endregion
+-export { apply, inject };
+diff --git a/package.json b/package.json
+index 78fccd6791e07ad802d5f4a21f1e3d6655fde2b2..9ddde12a93fbb1f15234c8fc3eea4a2609059cf6 100644
+--- a/package.json
++++ b/package.json
+@@ -20,7 +20,7 @@
+     "client": {
+       "inject": [
+         "@deepseek-ai/dsh-client-ui-theme",
+-        "@deepseek-ai/dsh-client-runtime",
++        "@deepseek-ai/dsh-client-store",
+         "@deepseek-ai/dsh-client-ui-slots",
+         "@deepseek-ai/dsh-client-locale"
+       ],
+@@ -51,7 +51,7 @@
+   ],
+   "peerDependencies": {
+     "@deepseek-ai/cordis": "^4.0.1",
+-    "@deepseek-ai/dsh-client-runtime": "^0.0.1-rc.1",
++    "@deepseek-ai/dsh-client-store": "0.2.0-rc.2",
+     "@deepseek-ai/schemastery": "^3.18.1",
+     "react": "^18.2.0 || ^19.0.0",
+     "@dshthemes/core": "^0.2.0"

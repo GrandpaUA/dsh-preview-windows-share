@@ -1,0 +1,16 @@
+packages:
+  - .
+autoInstallPeers: true
+allowBuilds:
+  node-pty: true
+  sharp: true
+  esbuild: true
+  '@deepseek-ai/dsh-subprocess-local': true
+  '@google/genai': true
+  koffi: true
+  protobufjs: true
+patchedDependencies:
+  '@deepseek-ai/dsh-client-ui-model-selection@0.2.0-rc.2': patches/@deepseek-ai__dsh-client-ui-model-selection@0.2.0-rc.2.patch
+  '@deepseek-ai/dsh-llm-pi-ai@0.2.0-rc.2': patches/@deepseek-ai__dsh-llm-pi-ai@0.2.0-rc.2.patch
+  '@deepseek-ai/dsh-session-format-v0-to-v1@0.2.0-rc.2': patches/@deepseek-ai__dsh-session-format-v0-to-v1@0.2.0-rc.2.patch
+  '@deepseek-ai/dsh-session-title@0.2.0-rc.2': patches/@deepseek-ai__dsh-session-title@0.2.0-rc.2.patch

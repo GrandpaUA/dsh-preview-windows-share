@@ -1,0 +1,54 @@
+diff --git a/lib/index.js b/lib/index.js
+index 5f8121a79263ae74c0901fd424bb969ffa2be85b..fce097c5cf3a59deb058e56c7c3a8ef9641690d4 100644
+--- a/lib/index.js
++++ b/lib/index.js
+@@ -25,6 +25,8 @@ const disposition = defineReleasedPayloadDisposition;
+ * unknown variants as owner-opaque JSON.
+ */
+ const RELEASED_V0_EVENT_DISPOSITIONS = Object.freeze({
++	// Local failover plugin diagnostic. Preserve its payload and seq through migration.
++	"codex/failover": disposition(["at", "backupRef", "primaryRef", "provider"]),
+ 	"agent-preset/selected": disposition(["agentPreset"]),
+ 	"agent/inbox/spliced": disposition([
+ 		"target",
+@@ -549,6 +551,10 @@ function assertReleasedPayloadSemantics(event, version) {
+ 		case "user/message":
+ 			messageValue(data, label, version, "user");
+ 			return;
++		case "codex/failover":
++			if (event.ignorable !== true) throw new SessionFormatError(`${label} must be explicitly ignorable`);
++			for (const key of ["at", "backupRef", "primaryRef", "provider"]) stringValue(data[key], `${label} ${key}`);
++			return;
+ 		case "web/deepseek-search-llm-request":
+ 			nonEmptyString(data["endpoint"], `${label} endpoint`);
+ 			nonEmptyString(data["apiVersion"], `${label} apiVersion`);
+@@ -1458,6 +1464,7 @@ const SURFACE_OPTIONAL = [
+ ];
+ const LOG_OPTIONAL = ["ignorable"];
+ const LEGACY_SOURCE_TYPES = new Set([
++	"codex/failover",
+ 	"steering/message",
+ 	"request/header-delta",
+ 	"mode/set",
+@@ -1913,7 +1920,7 @@ function assertHeaderVersion(header, version) {
+ 	if (header.version !== version) throw new SessionFormatError(`expected format v${version} header`);
+ }
+ function normalizeReleasedV0Event(event, sessionId, state) {
+-	const named = normalizeLegacyCompactionType(event);
++	const named = normalizeLegacySubagentDescriptor(normalizeLegacyCompactionType(event));
+ 	assertSupportedLegacyType(named, sessionId);
+ 	const message = normalizeLegacyMessage(normalizeLegacyCompaction(normalizeLegacyRetry(normalizeLegacySteering(normalizeLegacyRequestHeader(normalizeLegacyTurnEnd(normalizeLegacyTurnStart(named, sessionId), sessionId), sessionId), sessionId), sessionId, state.retryIds), sessionId, state), sessionId, state.messageIds);
+ 	if (message.type !== "assistant/chunk") assertReleasedEventPayload(message, 0);
+@@ -1921,6 +1928,12 @@ function normalizeReleasedV0Event(event, sessionId, state) {
+ 	if (messageId !== void 0) state.messageIds.set(message.seq, messageId);
+ 	return message;
+ }
++// The rc.8 descriptor has the same fields as v3. Preserve them unchanged
++// and validate the complete target payload below.
++function normalizeLegacySubagentDescriptor(event) {
++	if (event.type !== "subagent/descriptor" || event.data?.version !== 2) return event;
++	return { ...event, data: { ...event.data, version: 3 } };
++}
+ function normalizeLegacyCompactionType(event) {
+ 	switch (event.type) {
+ 		case "compact/start": return {

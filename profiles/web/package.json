@@ -1,0 +1,23 @@
+{
+  "name": "dsh-preview-profile-web",
+  "private": true,
+  "dependencies": {
+    "@dshthemes/ui": "0.2.0",
+    "@local/dsh-codex-failover": "link:../../plugins/dsh-codex-failover",
+    "@local/dsh-locale-uk": "link:../../plugins/dsh-locale-uk",
+    "@local/dsh-wide-chat": "link:../../plugins/dsh-wide-chat",
+    "dock-base": "0.2.4",
+    "dsh-headroom": "link:../../plugins/dsh-headroom"
+  },
+  "dsh": {
+    "profile": {
+      "bundles": [
+        "@deepseek-ai/dsh-base",
+        "@deepseek-ai/dsh-web-app",
+        "dock-base",
+        "dsh-headroom",
+        "@dshthemes/ui"
+      ]
+    }
+  }
+}
