@@ -1,6 +1,6 @@
 # Pre-publication security review (local candidate, NOT RELEASED)
 
-Scope: every Git-visible file in this new repository and its Git index. This is a source/configuration review, not a scan of downloaded npm tarballs, installed dependencies, ignored local files, a remote repository, or runtime memory. The release has NOT been installed. Re-run the checks on the final staged commit after every change.
+Scope: every Git-visible file in this new repository and its Git index. This is a source/configuration review, not a scan of downloaded npm tarballs, installed dependencies, ignored local files, a remote repository, or runtime memory. Re-run the checks on the final staged commit after every change. The installer has been executed once on this machine in an isolated copy: both frozen-lock installs succeeded and the web UI answered HTTP 200 with the boot marker (401 without token).
 
 ## Method and observations
 
