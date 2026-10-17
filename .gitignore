@@ -1,6 +1,7 @@
 # Only source/configuration templates may enter Git. Never track runtime/user state.
 *
 !/.gitignore
+!/AUTOSTART.md
 !/AGENTS.md
 !/INSTALL-PLAN.md
 !/SECURITY-REVIEW.md
